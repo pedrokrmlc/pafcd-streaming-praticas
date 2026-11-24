@@ -1,0 +1,8 @@
+jupyterlab==4.4.9
+jupytext==1.17.3
+pyspark==4.0.1
+pandas==2.2.3
+pyarrow==21.0.0
+confluent-kafka==2.11.1
+psycopg[binary]==3.2.10
+matplotlib==3.10.6

@@ -1,0 +1,30 @@
+#cloud-config
+# Executado uma única vez, no primeiro boot da VM.
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+  - curl
+
+write_files:
+  - path: /etc/streaming.env
+    permissions: "0600"
+    content: |
+      JUPYTER_TOKEN=__TOKEN__
+      GF_ADMIN_PASSWORD=__TOKEN__
+      KAFKA_UI_PASSWORD=__TOKEN__
+  - path: /root/obter_material.sh
+    permissions: "0700"
+    content: |
+__OBTER_MATERIAL__
+
+runcmd:
+  - systemctl enable --now docker
+  - usermod -aG docker __ADMIN__
+  - bash /root/obter_material.sh
+  - cp /etc/streaming.env /opt/streaming/ambiente/.env
+  # o Jupyter roda com uid 1000 e precisa escrever nos notebooks
+  - chown -R 1000:1000 /opt/streaming/notebooks
+  - cd /opt/streaming/ambiente && docker compose up -d --build
+  - touch /opt/streaming/.pronto

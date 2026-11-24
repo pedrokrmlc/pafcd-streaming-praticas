@@ -54,3 +54,42 @@ enviar_pacote() {
     -n material.tgz --permissions r --expiry "$exp" --https-only -o tsv)"
   echo "https://$sa.blob.core.windows.net/material/material.tgz?$sas"
 }
+
+# ---- Região permitida ----------------------------------------------------------
+# Assinaturas como a Azure for Students só aceitam algumas regiões (política
+# "Allowed resource deployment regions"). Devolve as regiões permitidas, uma por linha
+# (vazio = sem restrição encontrada).
+regioes_permitidas() {
+  local todas
+  todas="$(az account list-locations --query "[].name" -o tsv)"
+  az policy assignment list --disable-scope-strict-match --query "[].parameters" -o json 2>/dev/null \
+    | TODAS="$todas" python3 -c '
+import json, os, sys
+todas = set(os.environ["TODAS"].split())
+achadas = set()
+def andar(x):
+    if isinstance(x, dict):
+        for v in x.values(): andar(v)
+    elif isinstance(x, list):
+        for v in x: andar(v)
+    elif isinstance(x, str) and x.lower() in todas:
+        achadas.add(x.lower())
+andar(json.load(sys.stdin) or [])
+print("\n".join(sorted(achadas)))'
+}
+
+# Escolhe LOCATION: mantém a pedida se for permitida; senão, a primeira permitida da lista de preferência.
+escolher_regiao() {
+  local permitidas preferidas r
+  permitidas="$(regioes_permitidas)"
+  if [[ -z "$permitidas" ]] || grep -qx "$LOCATION" <<<"$permitidas"; then
+    return
+  fi
+  preferidas="brazilsouth eastus eastus2 southcentralus centralus westus2 westus3 northcentralus canadacentral"
+  for r in $preferidas; do
+    if grep -qx "$r" <<<"$permitidas"; then LOCATION="$r"; break; fi
+  done
+  if ! grep -qx "$LOCATION" <<<"$permitidas"; then LOCATION="$(head -1 <<<"$permitidas")"; fi
+  echo ">> Sua assinatura só permite: $(tr '\n' ' ' <<<"$permitidas")" >&2
+  echo ">> Usando a região $LOCATION" >&2
+}

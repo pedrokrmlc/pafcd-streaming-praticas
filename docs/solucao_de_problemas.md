@@ -1,12 +1,13 @@
 # Solução de problemas
 
 ### `RequestDisallowedByAzure` ou "região não permitida" ao criar a VM
-A assinatura Azure for Students só permite algumas regiões, e a lista varia. Apague o grupo criado e tente outra:
+A assinatura Azure for Students só permite algumas regiões, e a lista varia. O `criar_ambiente.sh` já tenta
+descobrir as regiões permitidas e escolher uma sozinho. Se mesmo assim der erro, veja a lista e escolha à mão:
 ```bash
-az group delete -n rg-streaming --yes
-LOCATION=westus2 bash infra/criar_ambiente.sh SEU_IP     # tente também: eastus, centralus, westus3, brazilsouth
+az policy assignment list --disable-scope-strict-match --query "[].{nome:displayName, parametros:parameters}" -o json
+LOCATION=NOME_DA_REGIAO bash infra/criar_ambiente.sh SEU_IP
 ```
-Para ver as regiões liberadas: Portal → *Policy* → *Assignments* → "Allowed resource deployment regions".
+(Também aparece no Portal → *Policy* → *Assignments* → "Allowed resource deployment regions".)
 
 ### `QuotaExceeded` / tamanho de VM indisponível
 ```bash

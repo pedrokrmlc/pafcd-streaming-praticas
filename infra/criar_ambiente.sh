@@ -19,6 +19,23 @@ az provider register --namespace Microsoft.Compute --wait >/dev/null
 az provider register --namespace Microsoft.Network --wait >/dev/null
 az provider register --namespace Microsoft.Storage --wait >/dev/null
 
+echo ">> Verificando as regiões permitidas na sua assinatura..."
+escolher_regiao
+
+# Um grupo vazio que sobrou de uma tentativa anterior em outra região é apagado
+if [[ "$(az group exists -n "$RG")" == "true" ]]; then
+  LOC_ATUAL="$(az group show -n "$RG" --query location -o tsv)"
+  if [[ "$LOC_ATUAL" != "$LOCATION" ]]; then
+    if [[ "$(az resource list -g "$RG" --query "length(@)" -o tsv)" == "0" ]]; then
+      echo ">> Apagando o grupo vazio $RG que ficou em $LOC_ATUAL (tentativa anterior)..."
+      az group delete -n "$RG" --yes
+    else
+      echo "O grupo $RG já existe em $LOC_ATUAL e tem recursos. Rode 'bash infra/destruir.sh' antes ou use LOCATION=$LOC_ATUAL."
+      exit 1
+    fi
+  fi
+fi
+
 echo ">> Criando grupo de recursos $RG em $LOCATION..."
 az group create -n "$RG" -l "$LOCATION" -o none
 

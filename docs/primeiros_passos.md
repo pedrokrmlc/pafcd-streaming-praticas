@@ -36,7 +36,7 @@ cd streaming
 
 ## 4. Descubra seu IP
 
-No navegador **do seu computador** (não no Cloud Shell), abra <https://ifconfig.me>. Anote o número, por exemplo `177.20.30.40`.
+No navegador **do seu computador** (não no Cloud Shell), abra <https://api.ipify.org>. Anote o número, por exemplo `177.20.30.40`. Precisa ser o IPv4 (quatro números separados por ponto); sites que mostram um endereço longo com `:` estão mostrando o IPv6, que não serve.
 Só esse IP vai conseguir acessar a sua VM.
 
 ## 5. Crie o ambiente

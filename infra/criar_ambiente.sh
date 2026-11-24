@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cria a VM do curso. Rode no Azure Cloud Shell (Bash), de dentro da pasta do material:
 #   bash infra/criar_ambiente.sh SEU_IP
-# Descubra SEU_IP abrindo https://ifconfig.me no navegador do seu computador.
+# Descubra SEU_IP abrindo https://api.ipify.org no navegador do seu computador.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source infra/config.sh
@@ -9,7 +9,7 @@ source infra/config.sh
 MEU_IP="${1:-}"
 if [[ ! "$MEU_IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
   echo "Uso: bash infra/criar_ambiente.sh SEU_IP   (ex.: 177.20.30.40)"
-  echo "Descubra seu IP em https://ifconfig.me (no navegador do SEU computador, não no Cloud Shell)."
+  echo "Descubra seu IP em https://api.ipify.org (no navegador do SEU computador, não no Cloud Shell)."
   exit 1
 fi
 

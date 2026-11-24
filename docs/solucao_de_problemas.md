@@ -17,7 +17,7 @@ Precisa ter **8 GB de RAM**. Com 4 GB (B2s) o Kafka e o Spark não cabem juntos.
 
 ### O navegador não abre o Jupyter / Kafka UI (fica carregando)
 1. `bash infra/status.sh`: o ambiente já está "PRONTO"?
-2. Seu IP mudou? Veja em https://ifconfig.me e rode `bash infra/liberar_ip.sh NOVO_IP`.
+2. Seu IP mudou? Veja em https://api.ipify.org e rode `bash infra/liberar_ip.sh NOVO_IP`.
 3. Use `http://` e não `https://`.
 4. Redes de empresa ou da faculdade às vezes bloqueiam as portas 8888/8080/3000. Teste pelo 4G do celular.
 

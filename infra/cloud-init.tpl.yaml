@@ -1,5 +1,5 @@
 #cloud-config
-# Executado uma única vez, no primeiro boot da VM.
+# Executado uma vez, no primeiro boot da VM.
 package_update: true
 packages:
   - docker.io

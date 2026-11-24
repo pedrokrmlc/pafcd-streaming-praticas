@@ -52,13 +52,17 @@ else
 fi
 
 CLOUD_INIT="$(mktemp)"
-TOKEN="$TOKEN" ADMIN="$ADMIN_USER" OBTER="$OBTER" python3 - infra/cloud-init.tpl.yaml > "$CLOUD_INIT" <<'PY'
+TOKEN="$TOKEN" ADMIN="$ADMIN_USER" OBTER="$OBTER" PYTHONIOENCODING=utf-8 python3 - infra/cloud-init.tpl.yaml > "$CLOUD_INIT" <<'PY'
 import os, sys
-s = open(sys.argv[1]).read()
+s = open(sys.argv[1], encoding="utf-8").read()
 s = s.replace("__TOKEN__", os.environ["TOKEN"]).replace("__ADMIN__", os.environ["ADMIN"])
 s = s.replace("__OBTER_MATERIAL__", "      set -e\n      " + os.environ["OBTER"])
 print(s, end="")
 PY
+
+if ! python3 -c "import sys,yaml; yaml.safe_load(open(sys.argv[1], encoding='utf-8'))" "$CLOUD_INIT" 2>/dev/null; then
+  if python3 -c "import yaml" 2>/dev/null; then echo "Erro interno: configuração da VM inválida."; rm -f "$CLOUD_INIT"; exit 1; fi
+fi
 
 # Tenta tamanhos e regiões até achar capacidade disponível
 CRIADA=""

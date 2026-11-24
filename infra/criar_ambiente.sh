@@ -96,7 +96,7 @@ az network nsg rule create -g "$RG" --nsg-name "$NSG" -n libera-aluno \
   --source-address-prefixes "$MEU_IP/32" --destination-port-ranges $PORTAS -o none
 
 echo ">> Agendando desligamento automático diário (${AUTO_SHUTDOWN_UTC} UTC)..."
-az vm auto-shutdown -g "$RG" -n "$VM" --time "$AUTO_SHUTDOWN_UTC" -o none
+az vm auto-shutdown -g "$RG" -n "$VM" --time "$AUTO_SHUTDOWN_UTC" --location "$REGIAO" -o none
 
 IP="$(ip_publico)"
 cat <<EOF

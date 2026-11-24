@@ -14,6 +14,7 @@ if [[ ! "$MEU_IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
 fi
 
 TOKEN="$(openssl rand -hex 12)"
+AVISO_SHUTDOWN=""
 echo ">> Registrando provedores (só demora na primeira vez)..."
 az provider register --namespace Microsoft.Compute --wait >/dev/null
 az provider register --namespace Microsoft.Network --wait >/dev/null
@@ -96,7 +97,10 @@ az network nsg rule create -g "$RG" --nsg-name "$NSG" -n libera-aluno \
   --source-address-prefixes "$MEU_IP/32" --destination-port-ranges $PORTAS -o none
 
 echo ">> Agendando desligamento automático diário (${AUTO_SHUTDOWN_UTC} UTC)..."
-az vm auto-shutdown -g "$RG" -n "$VM" --time "$AUTO_SHUTDOWN_UTC" --location "$REGIAO" -o none
+if ! az vm auto-shutdown -g "$RG" -n "$VM" --time "$AUTO_SHUTDOWN_UTC" --location "$REGIAO" -o none --only-show-errors 2>/dev/null; then
+  AVISO_SHUTDOWN="ATENÇÃO: a região $REGIAO não oferece desligamento automático. Desligue SEMPRE com bash infra/desligar.sh."
+  echo ">> $AVISO_SHUTDOWN"
+fi
 
 IP="$(ip_publico)"
 cat <<EOF
@@ -114,5 +118,6 @@ cat <<EOF
  (se perder, rode: bash infra/mostrar_acesso.sh)
 
  Ao final de CADA aula:  bash infra/desligar.sh
+ ${AVISO_SHUTDOWN:-}
 =====================================================================
 EOF

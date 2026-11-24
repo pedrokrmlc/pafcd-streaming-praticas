@@ -24,6 +24,12 @@ ENV SHELL=/bin/bash \
 COPY --chown=aluno warmup.py /tmp/warmup.py
 RUN python /tmp/warmup.py
 
+# O terminal do Jupyter abre um shell de login, e o /etc/profile do Debian redefine o PATH.
+# Este arquivo devolve as ferramentas do Kafka ao PATH em todo terminal.
+USER root
+RUN echo 'export PATH=/opt/kafka/bin:$PATH' > /etc/profile.d/kafka.sh
+USER aluno
+
 EXPOSE 8888 4040
 CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", \
      "--ServerApp.root_dir=/home/aluno/notebooks"]

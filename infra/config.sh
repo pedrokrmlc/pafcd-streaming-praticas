@@ -5,7 +5,9 @@
 RG="${RG:-rg-streaming}"                 # grupo de recursos (apagar o grupo apaga tudo)
 VM="${VM:-vm-streaming}"                 # nome da VM
 LOCATION="${LOCATION:-eastus2}"          # região (veja docs/solucao_de_problemas.md se der erro de política)
-SIZE="${SIZE:-Standard_B2ms}"            # 2 vCPU / 8 GB RAM. Alternativas: Standard_D2as_v5, Standard_D2s_v5
+SIZE="${SIZE:-Standard_B2ms}"            # 2 vCPU / 8 GB RAM (primeira tentativa)
+# Se o tamanho pedido estiver sem capacidade, o script tenta estes (todos com 2 vCPU / 8 GB):
+TAMANHOS_ALTERNATIVOS="Standard_B2as_v2 Standard_B2s_v2 Standard_D2as_v5 Standard_D2s_v5 Standard_D2as_v4 Standard_D2s_v4"
 ADMIN_USER="${ADMIN_USER:-aluno}"
 DISK_GB="${DISK_GB:-32}"
 AUTO_SHUTDOWN_UTC="${AUTO_SHUTDOWN_UTC:-0300}"   # 03:00 UTC = 00:00 em Brasília
@@ -76,6 +78,27 @@ def andar(x):
         achadas.add(x.lower())
 andar(json.load(sys.stdin) or [])
 print("\n".join(sorted(achadas)))'
+}
+
+# Regiões candidatas, na ordem de tentativa: LOCATION primeiro, depois as outras permitidas.
+regioes_candidatas() {
+  local permitidas r
+  permitidas="$(regioes_permitidas)"
+  echo "$LOCATION"
+  [[ -z "$permitidas" ]] && return
+  for r in brazilsouth eastus eastus2 southcentralus centralus westus2 westus3 northcentralus canadacentral $permitidas; do
+    grep -qx "$r" <<<"$permitidas" && echo "$r"
+  done | awk -v l="$LOCATION" '$0 != l && !seen[$0]++' | head -4
+}
+
+# Apaga o que uma tentativa de criar a VM deixou pela metade (mantém o armazenamento do material).
+limpar_vm_parcial() {
+  local tipo ids
+  for tipo in Microsoft.Compute/virtualMachines Microsoft.Compute/disks Microsoft.Network/networkInterfaces \
+              Microsoft.Network/publicIPAddresses Microsoft.Network/networkSecurityGroups Microsoft.Network/virtualNetworks; do
+    ids="$(az resource list -g "$RG" --resource-type "$tipo" --query "[].id" -o tsv)"
+    [[ -n "$ids" ]] && az resource delete --ids $ids -o none 2>/dev/null || true
+  done
 }
 
 # Escolhe LOCATION: mantém a pedida se for permitida; senão, a primeira permitida da lista de preferência.

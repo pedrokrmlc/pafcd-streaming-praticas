@@ -59,13 +59,35 @@ s = s.replace("__OBTER_MATERIAL__", "      set -e\n      " + os.environ["OBTER"]
 print(s, end="")
 PY
 
-echo ">> Criando VM $VM ($SIZE). Leva de 2 a 4 minutos..."
-az vm create -g "$RG" -n "$VM" \
-  --image Ubuntu2404 --size "$SIZE" \
-  --admin-username "$ADMIN_USER" --generate-ssh-keys \
-  --os-disk-size-gb "$DISK_GB" --storage-sku StandardSSD_LRS \
-  --public-ip-sku Standard --nsg-rule NONE \
-  --custom-data "$CLOUD_INIT" -o none
+# Tenta tamanhos e regiões até achar capacidade disponível
+CRIADA=""
+LOG_VM="$(mktemp)"
+for REGIAO in $(regioes_candidatas); do
+  for TAM in $(echo "$SIZE $TAMANHOS_ALTERNATIVOS" | tr ' ' '\n' | awk '!seen[$0]++'); do
+    echo ">> Tentando VM $TAM em $REGIAO (leva de 1 a 4 minutos)..."
+    if az vm create -g "$RG" -n "$VM" -l "$REGIAO" \
+        --image Ubuntu2404 --size "$TAM" \
+        --admin-username "$ADMIN_USER" --generate-ssh-keys \
+        --os-disk-size-gb "$DISK_GB" --storage-sku StandardSSD_LRS \
+        --public-ip-sku Standard --nsg "$NSG" --nsg-rule NONE \
+        --custom-data "$CLOUD_INIT" -o none --only-show-errors >"$LOG_VM" 2>&1; then
+      CRIADA="$TAM em $REGIAO"; break 2
+    fi
+    if grep -qE "SkuNotAvailable|Capacity|QuotaExceeded|OperationNotAllowed|AllocationFailed|ZonalAllocationFailed|RequestDisallowedByAzure|NotAvailableForSubscription" "$LOG_VM"; then
+      echo "   indisponível ($(grep -oE "SkuNotAvailable|QuotaExceeded|OperationNotAllowed|AllocationFailed|RequestDisallowedByAzure|NotAvailableForSubscription" "$LOG_VM" | head -1)); tentando a próxima opção"
+      limpar_vm_parcial
+    else
+      echo "Erro inesperado ao criar a VM:"; tail -20 "$LOG_VM"; rm -f "$LOG_VM" "$CLOUD_INIT"; exit 1
+    fi
+  done
+done
+rm -f "$LOG_VM"
+if [[ -z "$CRIADA" ]]; then
+  rm -f "$CLOUD_INIT"
+  echo "Nenhuma combinação de tamanho e região tinha capacidade agora. Tente de novo em alguns minutos."
+  exit 1
+fi
+echo ">> VM criada: $CRIADA"
 rm -f "$CLOUD_INIT"
 
 echo ">> Liberando as portas do curso só para o IP $MEU_IP..."
